@@ -1,8 +1,6 @@
 const Sauce = require('../models/sauce');
 const fs = require('fs');
-//const {
- //   Z_FIXED
-//} = require('zlib');
+
 
 exports.addSauce = (req, res, next) => {
     req.body.sauce = JSON.parse(req.body.sauce);
