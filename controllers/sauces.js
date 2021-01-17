@@ -1,5 +1,8 @@
 const Sauce = require('../models/sauce');
 const fs = require('fs');
+//const {
+ //   Z_FIXED
+//} = require('zlib');
 
 exports.addSauce = (req, res, next) => {
     req.body.sauce = JSON.parse(req.body.sauce);
@@ -11,8 +14,10 @@ exports.addSauce = (req, res, next) => {
       mainPepper: req.body.sauce.mainPepper,
       imageUrl: url + '/images/' + req.file.filename,
       heat: req.body.sauce.heat,
-      usersLiked: req.body.usersLiked,
-      usersDisliked: req.body.usersDisliked,
+      likes: 0,
+      dislikes: 0,
+      usersLiked: [],
+      usersDisliked: [],
       userId: req.body.sauce.userId
     });
     sauce.save().then(
@@ -50,25 +55,43 @@ exports.addSauce = (req, res, next) => {
 
   exports.addLikes = (req, res, next) => {
       Sauce.findOne({
-        _id: req.params.id
-      }).then(
-      (sauce) => {
-        res.status(200).json(sauce);
-        sauce = {
-        likes: req.body.likes,
-        dislikes: req.body.dislikes,
-        userId: req.body.userId
-    }
-    sauce.save()
-      }
-    ).catch(
-      (error) => {
-        res.status(404).json({
-          error: error
-        });
-      }
-    );
-  }
+        _id: res.req.params.id,
+    }, function (error, sauce) {
+        const userId = req.body.userId
+        const likedArray = sauce.usersLiked;
+        const dislikedArray = sauce.usersDisliked;
+        const likeValue = req.body.like;
+        const userLikeIndex = likedArray.indexOf(userId);
+        const userDislikeIndex = dislikedArray.indexOf(userId);
+
+        if (likeValue === 1) {
+            likedArray.push(userId)
+        } else if (likeValue === -1) {
+            dislikedArray.push(userId);
+        } else {
+            if (userLikeIndex >= 0) {
+                likedArray.splice(userLikeIndex, 1);
+            } else if (userDislikeIndex >= 0) {
+                dislikedArray.splice(userDislikeIndex, 1);
+            }
+        }
+        sauce.likes = likedArray.length;
+        sauce.dislikes = dislikedArray.length;
+        Sauce.updateOne({
+            _id: res.req.params.id
+        }, sauce).then(() => {
+            res.status(200).json({
+                message: 'Like updated successfully!'
+            })
+        }).catch(
+            (error) => {
+                res.status(400).json({
+                    error: error
+                });
+            });
+    })
+}
+  
 
 
   exports.modifySauce = (req, res, next) => {
@@ -95,8 +118,6 @@ exports.addSauce = (req, res, next) => {
       mainPepper: req.body.mainPepper,
       imageUrl: req.body.imageUrl,
       heat: req.body.heat,
-      //likes: req.body.likes,
-      //dislikes: req.body.dislikes,
       userId: req.body.userId
     };
     }
